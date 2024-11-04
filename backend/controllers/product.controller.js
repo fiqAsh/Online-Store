@@ -61,3 +61,99 @@ export const createProduct = async (req, res) => {
 		res.status(500).json({ message: "server error", error: error.message });
 	}
 };
+
+export const deleteProduct = async (req, res) => {
+	try {
+		const product = await Product.findById(req.params.id);
+
+		if (!product) {
+			return res.status(404).json({ message: "product not found" });
+		}
+
+		if (product.image) {
+			const publicId = product.image.split("/").pop().split(".")[0]; //this will get the id of the image
+
+			try {
+				await cloudinary.uploader.destroy(`products/${publicId}`);
+				console.log("image deleted");
+			} catch (error) {
+				console.log("errir deleting image", image);
+			}
+		}
+
+		await Product.findByIdAndDelete(req.params.id);
+
+		res.json({ message: "product deleted successfully" });
+	} catch (error) {
+		console.log("error in deleteProduct controller");
+		res.status(500).json({ message: "server error", error: error.message });
+	}
+};
+
+export const getRecommendedProducts = async (req, res) => {
+	try {
+		const products = await Product.aggregate([
+			{
+				$sample: {
+					size: 3,
+				},
+			},
+			{
+				$project: {
+					_id: 1,
+					name: 1,
+					description: 1,
+					image: 1,
+					price: 1,
+				},
+			},
+		]);
+		res.json(products);
+	} catch (error) {
+		console.log("error in getRecommendedProducts controller");
+		res.status(500).json({ message: "server error", error: error.message });
+	}
+};
+
+export const getProductsByCategory = async (req, res) => {
+	const { category } = req.params;
+	try {
+		const products = await Product.find({ category });
+
+		res.json({ products });
+	} catch (error) {
+		console.log("error in getProductsByCategory controller");
+		res.status(500).json({ message: "server error", error: error.message });
+	}
+};
+
+export const toggleFeaturedProduct = async (req, res) => {
+	try {
+		const product = await Product.findById(req.params.id);
+
+		if (product) {
+			product.isFeatured = !product.isFeatured;
+
+			const updatedProduct = await product.save();
+
+			await updateFeaturedProductsCache();
+
+			res.json(updatedProduct);
+		} else {
+			res.status(404).json({ message: "product not found" });
+		}
+	} catch (error) {
+		console.log("error in toggleFeaturedProduct controller");
+		res.status(500).json({ message: "server error", error: error.message });
+	}
+};
+
+async function updateFeaturedProductsCache() {
+	try {
+		const featuredProducts = await Product.find({ isFeatured: true }).lean(); //lean method is used to convert mongoose object to json object which improves performance
+
+		await redis.set("featured_products", JSON.stringify(featuredProducts));
+	} catch (error) {
+		console.log("error in updateFeaturedProductsCache function");
+	}
+}
