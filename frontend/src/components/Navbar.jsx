@@ -40,9 +40,11 @@ const Navbar = () => {
 
 								<span className="hidden sm:inline">Cart</span>
 
-								<span className="absolute -top-2 -left-2 bg-emerald-500 text-white rounded-full px-2 text-xs py-.5 group-hover:bg-emerald-400 transition duration-300 ease-in-out">
-									{cart.length}
-								</span>
+								{cart.length > 0 && (
+									<span className="absolute -top-2 -left-2 bg-emerald-500 text-white rounded-full px-2 text-xs py-.5 group-hover:bg-emerald-400 transition duration-300 ease-in-out">
+										{cart.length}
+									</span>
+								)}
 							</Link>
 						)}
 
