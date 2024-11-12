@@ -1,8 +1,8 @@
 import express from "express";
 import {
-	signup,
 	login,
 	logout,
+	signup,
 	refreshToken,
 	getProfile,
 } from "../controllers/auth.controller.js";
